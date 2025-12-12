@@ -1133,6 +1133,57 @@
             // App will still work with local storage only
         }
 
+
+// ===== REAL-TIME FIREBASE LISTENERS FOR MULTI-DEVICE SYNC =====
+function setupRealtimeListeners() {
+    if (!firebaseDB || !syncEnabled) {
+        console.warn('Firebase not available for listeners');
+        return;
+    }
+
+    try {
+        // Listen for student updates
+        firebaseDB.ref('students/').on('value', snapshot => {
+            const data = snapshot.val();
+            if (data) {
+                console.log('📥 Students updated from Firebase:', Object.keys(data).length, 'records');
+                // Force refresh if on admin panel
+                const adminPanel = document.getElementById('adminPanel');
+                if (adminPanel && adminPanel.classList.contains('active')) {
+                    loadStudents();
+                }
+            }
+        });
+
+        // Listen for attendance updates
+        firebaseDB.ref('attendance/').on('value', snapshot => {
+            const data = snapshot.val();
+            if (data) {
+                console.log('📥 Attendance updated from Firebase:', Object.keys(data).length, 'records');
+                // Force refresh if viewing attendance
+                const adminPanel = document.getElementById('adminPanel');
+                if (adminPanel && adminPanel.classList.contains('active')) {
+                    loadStudents(); // This also reloads attendance
+                }
+            }
+        });
+
+        // Listen for class updates
+        firebaseDB.ref('classes/').on('value', snapshot => {
+            const data = snapshot.val();
+            if (data) {
+                console.log('📥 Classes updated from Firebase:', Object.keys(data).length, 'records');
+            }
+        });
+
+        console.log('✅ Real-time Firebase listeners activated');
+    } catch (error) {
+        console.warn('Error setting up listeners:', error.message);
+    }
+}
+// ===== END REAL-TIME LISTENERS =====
+
+
         // ============================================================
         // 🔄 FIREBASE SYNC FUNCTIONS
         // ============================================================
@@ -6716,6 +6767,7 @@ To import: Use the "Complete Database Import" feature in the Bulk Import tab.`);
                 createdAt: new Date().toISOString()
             };
             await addRecord('students', student);
+                await syncToFirebase('students', studentData);
             showToast('Student added successfully!');
             event.target.reset();
             closeModal('addUserModal');
