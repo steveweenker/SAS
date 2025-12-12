@@ -1121,17 +1121,66 @@
 
         // Initialize Firebase
         let firebaseDB = null;
-        let syncEnabled = false;
+let syncEnabled = false;
 
-        try {
-            firebase.initializeApp(firebaseConfig);
-            firebaseDB = firebase.database();
-            syncEnabled = true;
-            console.log("✅ Firebase initialized successfully!");
-        } catch (error) {
-            console.warn("⚠️ Firebase init warning:", error.message);
-            // App will still work with local storage only
-        }
+// Setup real-time listeners for multi-device sync
+async function setupFirebaseListeners() {
+    if (!firebaseDB || !syncEnabled) return;
+
+    try {
+        // Listen to students changes
+        firebaseDB.ref('students/').on('value', snapshot => {
+            const data = snapshot.val();
+            if (data) {
+                console.log('✅ Students updated from Firebase:', data);
+                // Reload students if on that view
+                if (document.getElementById('adminPanel')?.classList.contains('active')) {
+                    loadStudents();
+                }
+            }
+        });
+
+        // Listen to attendance changes
+        firebaseDB.ref('attendance/').on('value', snapshot => {
+            const data = snapshot.val();
+            if (data) {
+                console.log('✅ Attendance updated from Firebase:', data);
+                // Reload attendance if on that view
+                if (document.getElementById('adminPanel')?.classList.contains('active')) {
+                    loadStudents();
+                }
+            }
+        });
+
+        // Listen to classes changes
+        firebaseDB.ref('classes/').on('value', snapshot => {
+            const data = snapshot.val();
+            if (data) {
+                console.log('✅ Classes updated from Firebase:', data);
+                if (document.getElementById('adminPanel')?.classList.contains('active')) {
+                    loadClasses();
+                }
+            }
+        });
+
+        console.log('✅ Firebase real-time listeners activated!');
+    } catch (error) {
+        console.warn('Firebase listeners setup warning:', error.message);
+    }
+}
+
+try {
+    firebase.initializeApp(firebaseConfig);
+    firebaseDB = firebase.database();
+    syncEnabled = true;
+    console.log('✅ Firebase initialized successfully!');
+
+    // Start listening for real-time updates
+    setupFirebaseListeners();
+} catch (error) {
+    console.warn('Firebase init warning:', error.message);
+    // App will still work with local storage only
+}
 
         // ============================================================
         // 🔄 FIREBASE SYNC FUNCTIONS
