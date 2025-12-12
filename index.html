@@ -1127,62 +1127,50 @@
             firebase.initializeApp(firebaseConfig);
             firebaseDB = firebase.database();
             syncEnabled = true;
-            console.log("✅ Firebase initialized successfully!");
-        } catch (error) {
-            console.warn("⚠️ Firebase init warning:", error.message);
-            // App will still work with local storage only
-        }
 
 
-// ===== REAL-TIME FIREBASE LISTENERS FOR MULTI-DEVICE SYNC =====
+// ========== REAL-TIME FIREBASE LISTENERS ==========
 function setupRealtimeListeners() {
     if (!firebaseDB || !syncEnabled) {
-        console.warn('Firebase not available for listeners');
+        console.warn('Firebase not ready for listeners');
         return;
     }
 
     try {
-        // Listen for student updates
+        console.log('Setting up Firebase real-time listeners...');
+
+        // Listen for student changes
         firebaseDB.ref('students/').on('value', snapshot => {
             const data = snapshot.val();
             if (data) {
-                console.log('📥 Students updated from Firebase:', Object.keys(data).length, 'records');
-                // Force refresh if on admin panel
-                const adminPanel = document.getElementById('adminPanel');
-                if (adminPanel && adminPanel.classList.contains('active')) {
+                console.log('✅ Students updated from Firebase');
+                // Refresh UI if admin viewing
+                if (document.getElementById('studentDataContainer')) {
                     loadStudents();
                 }
             }
         });
 
-        // Listen for attendance updates
+        // Listen for attendance changes
         firebaseDB.ref('attendance/').on('value', snapshot => {
             const data = snapshot.val();
             if (data) {
-                console.log('📥 Attendance updated from Firebase:', Object.keys(data).length, 'records');
-                // Force refresh if viewing attendance
-                const adminPanel = document.getElementById('adminPanel');
-                if (adminPanel && adminPanel.classList.contains('active')) {
-                    loadStudents(); // This also reloads attendance
-                }
+                console.log('✅ Attendance updated from Firebase');
             }
         });
 
-        // Listen for class updates
-        firebaseDB.ref('classes/').on('value', snapshot => {
-            const data = snapshot.val();
-            if (data) {
-                console.log('📥 Classes updated from Firebase:', Object.keys(data).length, 'records');
-            }
-        });
-
-        console.log('✅ Real-time Firebase listeners activated');
+        console.log('✅ Firebase real-time listeners ACTIVATED');
     } catch (error) {
         console.warn('Error setting up listeners:', error.message);
     }
 }
-// ===== END REAL-TIME LISTENERS =====
+// ========== END LISTENERS ==========
 
+            console.log("✅ Firebase initialized successfully!");
+        } catch (error) {
+            console.warn("⚠️ Firebase init warning:", error.message);
+            // App will still work with local storage only
+        }
 
         // ============================================================
         // 🔄 FIREBASE SYNC FUNCTIONS
@@ -6767,7 +6755,6 @@ To import: Use the "Complete Database Import" feature in the Bulk Import tab.`);
                 createdAt: new Date().toISOString()
             };
             await addRecord('students', student);
-                await syncToFirebase('students', studentData);
             showToast('Student added successfully!');
             event.target.reset();
             closeModal('addUserModal');
