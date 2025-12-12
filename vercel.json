@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "framework": "static",
+  "buildCommand": "",
+  "outputDirectory": ".",
+  "routes": [
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
+}
