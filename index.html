@@ -1128,7 +1128,6 @@
             firebaseDB = firebase.database();
             syncEnabled = true;
 
-
 // ========== REAL-TIME FIREBASE LISTENERS ==========
 function setupRealtimeListeners() {
     if (!firebaseDB || !syncEnabled) {
@@ -1139,32 +1138,21 @@ function setupRealtimeListeners() {
     try {
         console.log('Setting up Firebase real-time listeners...');
 
-        // Listen for student changes
         firebaseDB.ref('students/').on('value', snapshot => {
-            const data = snapshot.val();
-            if (data) {
-                console.log('✅ Students updated from Firebase');
-                // Refresh UI if admin viewing
-                if (document.getElementById('studentDataContainer')) {
-                    loadStudents();
-                }
-            }
+            console.log('Students updated from Firebase');
         });
 
-        // Listen for attendance changes
         firebaseDB.ref('attendance/').on('value', snapshot => {
-            const data = snapshot.val();
-            if (data) {
-                console.log('✅ Attendance updated from Firebase');
-            }
+            console.log('Attendance updated from Firebase');
         });
 
-        console.log('✅ Firebase real-time listeners ACTIVATED');
+        console.log('Real-time Firebase listeners ACTIVATED');
     } catch (error) {
         console.warn('Error setting up listeners:', error.message);
     }
 }
-// ========== END LISTENERS ==========
+// ========== END REAL-TIME LISTENERS ==========
+
 
             console.log("✅ Firebase initialized successfully!");
         } catch (error) {
