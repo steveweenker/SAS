@@ -1136,17 +1136,45 @@ function setupRealtimeListeners() {
     }
 
     try {
-        console.log('Setting up Firebase real-time listeners...');
+        console.log('✅ Setting up Firebase real-time listeners...');
 
+        // Students listener - auto-refresh when changed
         firebaseDB.ref('students/').on('value', snapshot => {
-            console.log('Students updated from Firebase');
+            const data = snapshot.val();
+            if (data) {
+                console.log('✅ Students updated from Firebase');
+                // Trigger UI refresh if admin panel open
+                if (document.querySelector('[data-panel="adminPanel"]')) {
+                    setTimeout(() => loadStudentsForAdmin(), 100);
+                }
+            }
         });
 
+        // Faculty listener
+        firebaseDB.ref('faculty/').on('value', snapshot => {
+            const data = snapshot.val();
+            if (data) {
+                console.log('✅ Faculty updated from Firebase');
+            }
+        });
+
+        // Classes listener
+        firebaseDB.ref('classes/').on('value', snapshot => {
+            const data = snapshot.val();
+            if (data) {
+                console.log('✅ Classes updated from Firebase');
+            }
+        });
+
+        // Attendance listener
         firebaseDB.ref('attendance/').on('value', snapshot => {
-            console.log('Attendance updated from Firebase');
+            const data = snapshot.val();
+            if (data) {
+                console.log('✅ Attendance updated from Firebase');
+            }
         });
 
-        console.log('Real-time Firebase listeners ACTIVATED');
+        console.log('✅ Real-time Firebase listeners ACTIVATED');
     } catch (error) {
         console.warn('Error setting up listeners:', error.message);
     }
@@ -1166,10 +1194,20 @@ function setupRealtimeListeners() {
 
         // Sync a single record to Firebase
         async function syncToFirebase(storeName, data) {
-            if (!firebaseDB || !syncEnabled) {
-                console.warn("Firebase not available. Skipping cloud sync.");
-                return;
-            }
+    if (!firebaseDB || !syncEnabled) {
+        console.log('Firebase not available');
+        return;
+    }
+
+    try {
+        const id = data.id || Date.now().toString();
+        const timestamp = new Date().toISOString();
+        await firebaseDB.ref(`${storeName}/${id}`).set({...data, id, timestamp});
+        console.log(`✅ Synced to Firebase: ${storeName}`);
+    } catch (error) {
+        console.error(`Sync error: ${error.message}`);
+    }
+}
 
             try {
                 const timestamp = new Date().toISOString();
@@ -3130,17 +3168,27 @@ function setupRealtimeListeners() {
             });
         }
 
-        function addRecord(storeName, data) {
-            return new Promise(async (resolve, reject) => {
-                try {
-                    const transaction = db.transaction(storeName, 'readwrite');
-                    const store = transaction.objectStore(storeName);
-                    const request = store.add(data);
+        
+async function addRecord(storeName, data) {
+    if (!firebaseDB || !syncEnabled) {
+        throw new Error('Firebase not available');
+    }
 
-                    request.onerror = () => reject(request.error);
-                    request.onsuccess = async () => {
-                        // 🔥 SYNC TO FIREBASE
-                        const recordWithId = { ...data, id: request.result };
+    try {
+        const id = data.id || Date.now().toString();
+        const timestamp = new Date().toISOString();
+        const recordWithTimestamp = {...data, id, timestamp, lastModified: timestamp};
+
+        await firebaseDB.ref(`${storeName}/${id}`).set(recordWithTimestamp);
+        console.log(`✅ Added to Firebase: ${storeName}`);
+
+        return id;
+    } catch (error) {
+        console.error(`Error adding ${storeName}:`, error);
+        throw error;
+    }
+}
+;
                         await syncToFirebase(storeName, recordWithId);
                         resolve(request.result);
                     };
@@ -3183,19 +3231,22 @@ function setupRealtimeListeners() {
             });
         }
 
-        function deleteRecord(storeName, id) {
-            return new Promise(async (resolve, reject) => {
-                try {
-                    const transaction = db.transaction(storeName, 'readwrite');
-                    const store = transaction.objectStore(storeName);
-                    const request = store.delete(id);
+        
+async function deleteRecord(storeName, id) {
+    if (!firebaseDB || !syncEnabled) {
+        throw new Error('Firebase not available');
+    }
 
-                    request.onerror = () => reject(request.error);
-                    request.onsuccess = async () => {
-                        // 🔥 DELETE FROM FIREBASE
-                        await deleteFromFirebase(storeName, id);
-                        resolve();
-                    };
+    try {
+        await firebaseDB.ref(`${storeName}/${id}`).remove();
+        console.log(`✅ Deleted from Firebase: ${storeName}/${id}`);
+        return true;
+    } catch (error) {
+        console.error(`Error deleting ${storeName}:`, error);
+        throw error;
+    }
+}
+;
                 } catch (error) {
                     reject(error);
                 }
